@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(uuid())
+  githubId          Int       @unique
+  login             String    @unique
+  name              String?
+  email             String?   @unique
+  avatarUrl         String?
+  accessToken       String    @db.Text
+  refreshToken      String?   @db.Text
+  tokenExpiresAt    DateTime?
+  scope             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  installations     GitHubInstallation[]
+  reviews           Review[]  @relation("ReviewAuthor")
+
+  @@index([githubId])
+  @@index([login])
+}
+
+model GitHubInstallation {
+  id              String    @id @default(uuid())
+  installationId  Int       @unique
+  accountLogin    String
+  accountType     String
+  accountAvatarUrl String?
+  targetType      String
+  permissions     Json
+  repositories    Repository[]
+  users           User[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([installationId])
+  @@index([accountLogin])
+}
+
+model Repository {
+  id                  String    @id @default(uuid())
+  githubId            Int       @unique
+  name                String
+  fullName            String    @unique
+  ownerLogin          String
+  ownerAvatarUrl      String?
+  private             Boolean   @default(false)
+  defaultBranch       String    @default("main")
+  installationId      String
+  installation        GitHubInstallation @relation(fields: [installationId], references: [id], onDelete: Cascade)
+  pullRequests        PullRequest[]
+  reviews             Review[]
+  reviewJobs          ReviewJob[]
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([githubId])
+  @@index([fullName])
+  @@index([installationId])
+}
+
+model PullRequest {
+  id              String    @id @default(uuid())
+  githubId        Int       @unique
+  number          Int
+  title           String
+  body            String?   @db.Text
+  state           String
+  authorLogin     String
+  authorAvatarUrl String?
+  sourceBranch    String
+  targetBranch    String
+  baseSha         String
+  headSha         String
+  additions       Int       @default(0)
+  deletions       Int       @default(0)
+  changedFiles    Int       @default(0)
+  repositoryId    String
+  repository      Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  reviewJobs      ReviewJob[]
+  reviews         Review[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([githubId])
+  @@index([number, repositoryId])
+  @@index([headSha])
+  @@index([repositoryId, state])
+}
+
+model ReviewJob {
+  id              String    @id @default(uuid())
+  status          JobStatus @default(PENDING)
+  prId            String
+  pr              PullRequest @relation(fields: [prId], references: [id], onDelete: Cascade)
+  repositoryId    String
+  repository      Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  headSha         String
+  errorMessage    String?   @db.Text
+  agentSteps      Int       @default(0)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  review          Review?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([prId, headSha])
+  @@index([status])
+  @@index([repositoryId])
+  @@index([prId])
+}
+
+model Review {
+  id                  String          @id @default(uuid())
+  jobId               String          @unique
+  job                 ReviewJob       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  prId                String
+  pr                  PullRequest     @relation(fields: [prId], references: [id], onDelete: Cascade)
+  repositoryId        String
+  repository          Repository      @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  authorId            String?
+  author              User?           @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  summary             String          @db.Text
+  assessment          Assessment
+  model               String
+  modelConfig         Json
+  agentSteps          Int
+  githubReviewId      Int?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  findings            Finding[]
+
+  @@index([prId])
+  @@index([repositoryId])
+  @@index([assessment])
+  @@index([createdAt])
+}
+
+model Finding {
+  id              String        @id @default(uuid())
+  reviewId        String
+  review          Review        @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  file            String
+  line            Int?
+  side            Side?
+  severity        Severity
+  category        Category
+  title           String
+  description     String        @db.Text
+  recommendation  String?       @db.Text
+  confidence      Float
+  githubCommentId Int?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([reviewId])
+  @@index([severity])
+  @@index([category])
+  @@index([file])
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum Assessment {
+  PASS
+  NEEDS_ATTENTION
+}
+
+enum Severity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum Category {
+  BUG
+  SECURITY
+  PERFORMANCE
+  RELIABILITY
+  MAINTAINABILITY
+}
+
+enum Side {
+  LEFT
+  RIGHT
+}
