@@ -8,10 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { api } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/utils";
-import { Github, LogOut, User, LayoutDashboard, FolderGit2, History, Settings, Loader2, ExternalLink, GitPullRequest } from "lucide-react";
+import { Github, LogOut, User, LayoutDashboard, FolderGit2, History, Settings, Loader2, ExternalLink, GitPullRequest, TrendingUp, Shield, Code2, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
+import { Background } from "@/components/ui/background";
+import { StatBlock, MetricRow } from "@/components/dashboard/metrics";
 
 interface RepositoryDetail {
   id: string;
@@ -22,7 +24,7 @@ interface RepositoryDetail {
   private: boolean;
   defaultBranch: string;
   installation: { id: string; accountLogin: string };
-  pullRequests: Array<{ id: string; number: number; title: string; state: string; authorLogin: string; authorAvatarUrl?: string | null; sourceBranch?: string; targetBranch?: string; additions?: number; deletions?: number; changedFiles?: number; updatedAt: string }>;
+  pullRequests: Array<{ id: string; number: number; title: string; state: string; authorLogin: string; updatedAt: string }>;
 }
 
 export default function RepositoryDetailPage() {
@@ -39,7 +41,7 @@ export default function RepositoryDetailPage() {
         setUser(userRes.user);
         setRepository(repoRes.repository);
       } catch {
-        // redirect handled by layout
+        window.location.href = "/auth/github";
       } finally {
         setLoading(false);
       }
@@ -49,9 +51,12 @@ export default function RepositoryDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <>
+        <Background intensity="subtle" />
+        <div className="relative z-10 min-h-screen flex items-center justify-center">
+          <div className="w-12 h-12 border-3 border-dm-accent-amber/30 border-t-dm-accent-amber rounded-full animate-spin" />
+        </div>
+      </>
     );
   }
 
@@ -62,152 +67,156 @@ export default function RepositoryDetailPage() {
   const openPRs = repository.pullRequests.filter((pr) => pr.state === "open");
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Link href="/repositories" className="text-muted-foreground hover:text-foreground">
-              <FolderGit2 className="h-5 w-5" />
-            </Link>
-            <Separator orientation="vertical" className="h-6 mx-2" />
-            <span className="text-xl font-bold">{repository.fullName}</span>
-            <Badge variant={repository.private ? "secondary" : "default"}>{repository.private ? "Private" : "Public"}</Badge>
+    <>
+      <Background intensity="subtle" />
+      <div className="relative z-10 min-h-screen">
+        <header className="border-b border-dm-bg-border/50 backdrop-blur-sm bg-dm-bg-deep/80 sticky top-0 z-50">
+          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Link href="/repositories" className="text-dm-text-muted hover:text-dm-text-primary transition-colors">
+                <FolderGit2 className="w-5 h-5" />
+              </Link>
+              <Separator orientation="vertical" className="h-5 mx-2" />
+              <span className="text-lg font-bold text-dm-text-primary">{repository.fullName}</span>
+              <Badge variant={repository.private ? "secondary" : "outline"} size="sm">{repository.private ? "Private" : "Public"}</Badge>
+            </div>
+            <div className="flex items-center gap-3">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-2 h-9 px-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.avatarUrl} alt={user.login} />
+                      <AvatarFallback className="text-xs">{user.login[0].toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <span className="hidden sm:block text-sm font-medium">{user.login}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-2 py-2 border-b border-dm-bg-border">
+                    <p className="font-medium text-sm text-dm-text-primary">{user.name || user.login}</p>
+                    <p className="text-xs text-dm-text-muted truncate">{user.email}</p>
+                  </div>
+                  <DropdownMenuItem asChild className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-dm-text-secondary hover:bg-dm-bg-raised hover:text-dm-text-primary transition-colors">
+                    <Link href="/dashboard">
+                      <LayoutDashboard className="w-4 h-4" />
+                      Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-dm-text-secondary hover:bg-dm-bg-raised hover:text-dm-text-primary transition-colors">
+                    <Link href="/repositories">
+                      <FolderGit2 className="w-4 h-4" />
+                      Repositories
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-dm-text-secondary hover:bg-dm-bg-raised hover:text-dm-text-primary transition-colors">
+                    <Link href="/reviews">
+                      <History className="w-4 h-4" />
+                      Reviews
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-dm-text-secondary hover:bg-dm-bg-raised hover:text-dm-text-primary transition-colors">
+                    <Link href="/settings">
+                      <Settings className="w-4 h-4" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => api.auth.logout().then(() => window.location.reload())} className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-dm-critical hover:bg-dm-critical/10 transition-colors">
+                    <LogOut className="w-4 h-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="gap-2 h-9 px-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.avatarUrl} alt={user.login} />
-                    <AvatarFallback>{user.login[0].toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <span className="hidden sm:block">{user.login}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="px-2 py-1">
-                  <p className="font-medium">{user.name || user.login}</p>
-                  <p className="text-xs text-muted-foreground">{user.email}</p>
-                </div>
-                <Separator />
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard" className="flex w-full items-center gap-2">
-                    <LayoutDashboard className="h-4 w-4" />
-                    Dashboard
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/repositories" className="flex w-full items-center gap-2">
-                    <FolderGit2 className="h-4 w-4" />
-                    Repositories
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/reviews" className="flex w-full items-center gap-2">
-                    <History className="h-4 w-4" />
-                    Reviews
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/settings" className="flex w-full items-center gap-2">
-                    <Settings className="h-4 w-4" />
-                    Settings
-                  </Link>
-                </DropdownMenuItem>
-                <Separator />
-                <DropdownMenuItem onClick={() => api.auth.logout().then(() => window.location.reload())} className="text-destructive flex items-center gap-2">
-                  <LogOut className="h-4 w-4" />
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+        </header>
+
+        <main className="container mx-auto px-4 py-6 md:py-8">
+          <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <h1 className="text-2xl md:text-3xl font-bold text-dm-text-primary">{repository.name}</h1>
+                <Badge variant={repository.private ? "secondary" : "outline"}>{repository.private ? "Private" : "Public"}</Badge>
+              </div>
+              <p className="text-dm-text-secondary">@{repository.ownerLogin} • Default branch: {repository.defaultBranch}</p>
+            </div>
+            <Button asChild variant="outline">
+              <Link href={`https://github.com/${repository.fullName}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                <ExternalLink className="w-4 h-4" />
+                View on GitHub
+              </Link>
+            </Button>
           </div>
-        </div>
-      </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">{repository.name}</h1>
-            <p className="text-muted-foreground">@{repository.ownerLogin} • Default branch: {repository.defaultBranch}</p>
+          <div className="grid gap-4 md:grid-cols-4 mb-8">
+            <StatBlock
+              label="Total Pull Requests"
+              value={repository.pullRequests.length}
+              subtitle={`+${openPRs.length} open`}
+              icon={<GitPullRequest className="w-6 h-6" />}
+            />
+            <StatBlock
+              label="Open PRs"
+              value={openPRs.length}
+              icon={<GitPullRequest className="w-6 h-6" />}
+            />
+            <StatBlock
+              label="Installed via"
+              value={repository.installation.accountLogin}
+              icon={<Shield className="w-6 h-6" />}
+            />
+            <StatBlock
+              label="Default Branch"
+              value={repository.defaultBranch}
+              icon={<Code2 className="w-6 h-6" />}
+            />
           </div>
-          <Button asChild variant="outline">
-            <Link href={`https://github.com/${repository.fullName}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-              <ExternalLink className="h-4 w-4" />
-              View on GitHub
-            </Link>
-          </Button>
-        </div>
 
-        <div className="grid gap-4 md:grid-cols-3 mb-8">
           <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">{repository.pullRequests.length}</div>
-              <p className="text-sm text-muted-foreground">Total Pull Requests</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">{openPRs.length}</div>
-              <p className="text-sm text-muted-foreground">Open Pull Requests</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">{repository.installation.accountLogin}</div>
-              <p className="text-sm text-muted-foreground">Installed via</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
+            <CardHeader className="flex items-center justify-between">
               <CardTitle>Pull Requests</CardTitle>
               <Badge variant="outline">{openPRs.length} open</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {repository.pullRequests.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <GitPullRequest className="h-12 w-12 mx-auto mb-4" />
-                <p>No pull requests yet</p>
-              </div>
-            ) : (
-              <div className="space-y-0">
-                {repository.pullRequests.map((pr) => (
-                  <Link key={pr.id} href={`/reviews/${pr.id}`} className="block">
-                    <div className="flex items-center justify-between p-4 border-b last:border-0 hover:bg-accent/50 transition-colors">
-                      <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={pr.authorAvatarUrl ?? undefined} alt={pr.authorLogin} />
-                          <AvatarFallback>{pr.authorLogin[0].toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-sm text-muted-foreground">#{pr.number}</span>
-                            <Badge variant={pr.state === "open" ? "default" : pr.state === "merged" ? "secondary" : "destructive"} className="text-xs">
-                              {pr.state}
-                            </Badge>
+            </CardHeader>
+            <CardContent className="pt-2">
+              {repository.pullRequests.length === 0 ? (
+                <div className="text-center py-12">
+                  <GitPullRequest className="w-12 h-12 text-dm-text-muted mx-auto mb-4" />
+                  <p className="text-dm-text-secondary">No pull requests yet</p>
+                </div>
+              ) : (
+                <div className="space-y-0">
+                  {repository.pullRequests.map((pr) => (
+                    <Link key={pr.id} href={`/reviews/${pr.id}`} className="block">
+                      <div className="flex items-center justify-between p-4 border-b border-dm-bg-border/50 last:border-0 hover:bg-dm-bg-raised/50 transition-colors">
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="text-xs">{pr.authorLogin[0].toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-sm text-dm-text-muted">#{pr.number}</span>
+                              <Badge variant={pr.state === "open" ? "success" : pr.state === "merged" ? "amber" : "critical"} size="sm">
+                                {pr.state}
+                              </Badge>
+                            </div>
+                            <p className="font-medium text-dm-text-primary truncate">{pr.title}</p>
+                            <p className="text-sm text-dm-text-muted">
+                              by @{pr.authorLogin} • {formatRelativeTime(pr.updatedAt)}
+                            </p>
                           </div>
-                          <p className="font-medium truncate">{pr.title}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {pr.sourceBranch} → {pr.targetBranch} • by @{pr.authorLogin} • {formatRelativeTime(pr.updatedAt)}
-                          </p>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-dm-text-muted flex-shrink-0">
+                          <span className="font-mono text-dm-text-dim">#{pr.number}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <span>+{pr.additions} -{pr.deletions}</span>
-                        <span className="font-mono">{pr.changedFiles} files</span>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </main>
-    </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    </>
   );
 }

@@ -34,59 +34,91 @@ export function formatRelativeTime(date: string | Date): string {
 export function getSeverityColor(severity: string): string {
   switch (severity) {
     case "CRITICAL":
-      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
+      return "bg-dm-critical/15 text-dm-critical border-dm-critical/30";
     case "HIGH":
-      return "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400";
+      return "bg-dm-warning/15 text-dm-warning border-dm-warning/30";
     case "MEDIUM":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
+      return "bg-dm-accent-amber/15 text-dm-accent-amber border-dm-accent-amber/30";
     case "LOW":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
+      return "bg-dm-neutral/15 text-dm-neutral border-dm-neutral/30";
     default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
+      return "bg-dm-bg-border text-dm-text-muted border-dm-bg-border-strong";
   }
 }
 
 export function getCategoryColor(category: string): string {
   switch (category) {
     case "BUG":
-      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
+      return "bg-dm-critical/15 text-dm-critical border-dm-critical/30";
     case "SECURITY":
-      return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400";
+      return "bg-dm-warning/15 text-dm-warning border-dm-warning/30";
     case "PERFORMANCE":
-      return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400";
+      return "bg-dm-accent-amber/15 text-dm-accent-amber border-dm-accent-amber/30";
     case "RELIABILITY":
-      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+      return "bg-dm-success/15 text-dm-success border-dm-success/30";
     case "MAINTAINABILITY":
-      return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400";
+      return "bg-dm-neutral/15 text-dm-neutral border-dm-neutral/30";
     default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
+      return "bg-dm-bg-border text-dm-text-muted border-dm-bg-border-strong";
   }
 }
 
 export function getAssessmentColor(assessment: string): string {
   switch (assessment) {
     case "PASS":
-      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+      return "bg-dm-success/15 text-dm-success border-dm-success/30";
     case "NEEDS_ATTENTION":
-      return "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400";
+      return "bg-dm-warning/15 text-dm-warning border-dm-warning/30";
     default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
+      return "bg-dm-bg-border text-dm-text-muted border-dm-bg-border-strong";
   }
 }
 
 export function getJobStatusColor(status: string): string {
   switch (status) {
     case "PENDING":
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
+      return "bg-dm-bg-border text-dm-text-muted border-dm-bg-border-strong";
     case "PROCESSING":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
+      return "bg-dm-accent-amber/15 text-dm-accent-amber border-dm-accent-amber/30 animate-pulse-slow";
     case "COMPLETED":
-      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+      return "bg-dm-success/15 text-dm-success border-dm-success/30";
     case "FAILED":
-      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
+      return "bg-dm-critical/15 text-dm-critical border-dm-critical/30";
     case "CANCELLED":
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
+      return "bg-dm-bg-border text-dm-text-muted border-dm-bg-border-strong";
     default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
+      return "bg-dm-bg-border text-dm-text-muted border-dm-bg-border-strong";
+  }
+}
+
+export function getSeverityIcon(severity: string) {
+  switch (severity) {
+    case "CRITICAL":
+      return "triangle-alert";
+    case "HIGH":
+      return "alert-circle";
+    case "MEDIUM":
+      return "alert-triangle";
+    case "LOW":
+      return "info";
+    default:
+      return "help-circle";
+  }
+}
+
+export function getCategoryIcon(category: string) {
+  switch (category) {
+    case "BUG":
+      return "bug";
+    case "SECURITY":
+      return "shield-alert";
+    case "PERFORMANCE":
+      return "gauge";
+    case "RELIABILITY":
+      return "check-circle-2";
+    case "MAINTAINABILITY":
+      return "wrench";
+    default:
+      return "help-circle";
   }
 }

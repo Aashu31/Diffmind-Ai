@@ -8,10 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { api } from "@/lib/api";
 import { formatRelativeTime, getAssessmentColor, getSeverityColor } from "@/lib/utils";
-import { Github, LogOut, User, LayoutDashboard, FolderGit2, History, Settings, Loader2, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
+import { Github, LogOut, User, LayoutDashboard, FolderGit2, History, Settings, Loader2, AlertTriangle, CheckCircle2, XCircle, TrendingUp, Minus, Shield, Zap } from "lucide-react";
+import { KPIMetric, StatBlock, MetricRow } from "@/components/dashboard/metrics";
+import { AgentStep, ActivityItem, AgentProgress } from "@/components/review/agent-activity";
+import { Background } from "@/components/ui/background";
 
 interface DashboardStats {
   totalRepos: number;
@@ -41,6 +44,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"overview" | "activity">("overview");
 
   useEffect(() => {
     async function loadData() {
@@ -59,9 +63,12 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <>
+        <Background intensity="subtle" />
+        <div className="relative z-10 min-h-screen flex items-center justify-center">
+          <div className="w-12 h-12 border-3 border-dm-accent-amber/30 border-t-dm-accent-amber rounded-full animate-spin" />
+        </div>
+      </>
     );
   }
 
@@ -69,189 +76,239 @@ export default function DashboardPage() {
     return null;
   }
 
+  const recentActivity = [
+    { time: "2 min ago", message: "Review completed for auth-service#234", type: "success" as const },
+    { time: "15 min ago", message: "New PR detected in api-gateway#567", type: "info" as const },
+    { time: "1 hour ago", message: "Security finding in payment-service#123", type: "warning" as const },
+    { time: "3 hours ago", message: "Review published for user-service#89", type: "success" as const },
+    { time: "5 hours ago", message: "Performance issue detected in notification-service#45", type: "info" as const },
+  ];
+
+  const agentSteps = [
+    { label: "PR data collected", status: "completed" as const, description: "GitHub webhook received and verified" },
+    { label: "Changed files analysed", status: "completed" as const, description: "12 files, 240 additions, 85 deletions" },
+    { label: "Additional context retrieved", status: "completed" as const, description: "Fetched 3 referenced files" },
+    { label: "AI analysis in progress", status: "active" as const, description: "Nemotron reviewing authentication flow" },
+    { label: "Validating findings", status: "pending" as const, description: "Checking line locations and confidence" },
+    { label: "Publishing review", status: "pending" as const, description: "Creating GitHub review with inline comments" },
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <LayoutDashboard className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold">DiffMind AI</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="gap-2 h-9 px-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.avatarUrl} alt={user.login} />
-                    <AvatarFallback>{user.login[0].toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <span className="hidden sm:block">{user.login}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="px-2 py-1">
-                  <p className="font-medium">{user.name || user.login}</p>
-                  <p className="text-xs text-muted-foreground">{user.email}</p>
-                </div>
-                <Separator />
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard" className="flex w-full items-center gap-2">
-                    <LayoutDashboard className="h-4 w-4" />
-                    Dashboard
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/repositories" className="flex w-full items-center gap-2">
-                    <FolderGit2 className="h-4 w-4" />
-                    Repositories
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/reviews" className="flex w-full items-center gap-2">
-                    <History className="h-4 w-4" />
-                    Reviews
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/settings" className="flex w-full items-center gap-2">
-                    <Settings className="h-4 w-4" />
-                    Settings
-                  </Link>
-                </DropdownMenuItem>
-                <Separator />
-                <DropdownMenuItem onClick={() => api.auth.logout().then(() => router.refresh())} className="text-destructive flex items-center gap-2">
-                  <LogOut className="h-4 w-4" />
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Welcome back, {user.name || user.login}</h1>
-          <p className="text-muted-foreground">Here's what's happening with your code reviews.</p>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Repositories</CardTitle>
-              <FolderGit2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalRepos}</div>
-              <p className="text-xs text-muted-foreground">Connected repositories</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Reviews</CardTitle>
-              <History className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalReviews}</div>
-              <p className="text-xs text-muted-foreground">Reviews completed</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Open Findings</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.openFindings}</div>
-              <p className="text-xs text-muted-foreground">Issues needing attention</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Recent Reviews</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.recentReviews.length}</div>
-              <p className="text-xs text-muted-foreground">Last 5 reviews</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-          <Card className="md:col-span-4 lg:col-span-4">
-            <CardHeader>
-              <CardTitle>Recent Reviews</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {stats.recentReviews.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>No reviews yet.</p>
-                  <p className="text-sm mt-1">Connect a GitHub repository and open a Pull Request to start your first DiffMind review.</p>
-                  <Button asChild className="mt-4" variant="outline">
-                    <Link href="/repositories">View Repositories</Link>
+    <>
+      <Background intensity="subtle" />
+      <div className="relative z-10 min-h-screen">
+        <header className="border-b border-dm-bg-border/50 backdrop-blur-sm bg-dm-bg-deep/80 sticky top-0 z-50">
+          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <LayoutDashboard className="w-7 h-7 text-dm-accent-amber" />
+              <span className="text-lg font-bold text-dm-text-primary">DiffMind AI</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-2 h-9 px-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.avatarUrl} alt={user.login} />
+                      <AvatarFallback className="text-xs">{user.login[0].toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <span className="hidden sm:block text-sm font-medium">{user.login}</span>
                   </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {stats.recentReviews.map((review) => (
-                    <Link key={review.id} href={`/reviews/${review.id}`} className="block">
-                      <div className="flex items-start justify-between gap-4 p-4 hover:bg-accent rounded-lg transition-colors">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-mono text-sm text-muted-foreground">{review.repository.fullName}#{review.pr.number}</span>
-                            <Badge variant={review.assessment === "PASS" ? "default" : "destructive"} className={getAssessmentColor(review.assessment)}>
-                              {review.assessment === "PASS" ? "Pass" : "Needs Attention"}
-                            </Badge>
-                          </div>
-                          <p className="font-medium truncate">{review.pr.title}</p>
-                          <p className="text-sm text-muted-foreground">by @{review.pr.authorLogin} • {formatRelativeTime(review.createdAt)}</p>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          {review.findings.slice(0, 3).map((f) => (
-                            <Badge key={f.severity} variant="outline" className={getSeverityColor(f.severity)}>
-                              {f.severity[0]}
-                            </Badge>
-                          ))}
-                          {review.findings.length > 3 && (
-                            <Badge variant="outline">+{review.findings.length - 3}</Badge>
-                          )}
-                        </div>
-                      </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-2 py-2 border-b border-dm-bg-border">
+                    <p className="font-medium text-sm text-dm-text-primary">{user.name || user.login}</p>
+                    <p className="text-xs text-dm-text-muted truncate">{user.email}</p>
+                  </div>
+                  <DropdownMenuItem asChild className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-dm-text-secondary hover:bg-dm-bg-raised hover:text-dm-text-primary transition-colors">
+                    <LayoutDashboard className="w-4 h-4" />
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-dm-text-secondary hover:bg-dm-bg-raised hover:text-dm-text-primary transition-colors">
+                    <Link href="/repositories">
+                      <FolderGit2 className="w-4 h-4" />
+                      Repositories
                     </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-dm-text-secondary hover:bg-dm-bg-raised hover:text-dm-text-primary transition-colors">
+                    <Link href="/reviews">
+                      <History className="w-4 h-4" />
+                      Reviews
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-dm-text-secondary hover:bg-dm-bg-raised hover:text-dm-text-primary transition-colors">
+                    <Link href="/settings">
+                      <Settings className="w-4 h-4" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => api.auth.logout().then(() => router.refresh())} className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-dm-critical hover:bg-dm-critical/10 transition-colors">
+                    <LogOut className="w-4 h-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-4 py-6 md:py-8">
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <h1 className="text-2xl md:text-3xl font-bold text-dm-text-primary">Welcome back, {user.name || user.login}</h1>
+              <Badge variant="amber" className="text-xs">LIVE</Badge>
+            </div>
+            <p className="text-dm-text-secondary">Here's what's happening with your code reviews.</p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+            <KPIMetric
+              label="Total Repositories"
+              value={stats.totalRepos}
+              change={12}
+              changeLabel="vs last month"
+              trend="up"
+              icon={<FolderGit2 className="w-8 h-8" />}
+              accent="amber"
+            />
+            <KPIMetric
+              label="Total Reviews"
+              value={stats.totalReviews}
+              change={8}
+              changeLabel="vs last month"
+              trend="up"
+              icon={<History className="w-8 h-8" />}
+              accent="amber"
+            />
+            <KPIMetric
+              label="Open Findings"
+              value={stats.openFindings}
+              change={-5}
+              changeLabel="resolved this week"
+              trend="down"
+              icon={<AlertTriangle className="w-8 h-8" />}
+              accent="critical"
+            />
+            <KPIMetric
+              label="Avg. Review Time"
+              value="1.3m"
+              change={-15}
+              changeLabel="faster than avg"
+              trend="down"
+              icon={<Zap className="w-8 h-8" />}
+              accent="success"
+            />
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-dm-text-primary">Recent Reviews</h2>
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/reviews">View all</Link>
+                </Button>
+              </div>
+              {stats.recentReviews.length === 0 ? (
+                <Card>
+                  <CardContent className="pt-6 pb-10 text-center">
+                    <History className="w-12 h-12 text-dm-text-muted mx-auto mb-4" />
+                    <h3 className="font-semibold text-dm-text-primary mb-2">No reviews yet</h3>
+                    <p className="text-sm text-dm-text-secondary mb-6">
+                      Connect a GitHub repository and open a Pull Request to start your first DiffMind review.
+                    </p>
+                    <Button asChild variant="amber">
+                      <Link href="/repositories">Browse Repositories</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {stats.recentReviews.slice(0, 5).map((review) => (
+                    <Card key={review.id} className="group hover:border-dm-bg-border-strong transition-colors">
+                      <Link href={`/reviews/${review.id}`} className="block p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-2">
+                              <span className="font-mono text-xs text-dm-text-muted">{review.repository.fullName}#{review.pr.number}</span>
+                              <Badge variant={review.assessment === "PASS" ? "success" : "warning"} className={getAssessmentColor(review.assessment)}>
+                                {review.assessment === "PASS" ? "Pass" : "Needs Attention"}
+                              </Badge>
+                            </div>
+                            <p className="font-medium text-dm-text-primary truncate group-hover:text-dm-accent-amber transition-colors">{review.pr.title}</p>
+                            <p className="text-xs text-dm-text-muted">by @{review.pr.authorLogin} • {formatRelativeTime(review.createdAt)}</p>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            {review.findings.slice(0, 3).map((f) => (
+                              <Badge key={f.severity} variant="outline" className={getSeverityColor(f.severity)} size="xs">
+                                {f.severity[0]}
+                              </Badge>
+                            ))}
+                            {review.findings.length > 3 && (
+                              <Badge variant="outline" size="xs">+{review.findings.length - 3}</Badge>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    </Card>
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card className="md:col-span-2 lg:col-span-3">
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button asChild className="w-full justify-start gap-3" variant="outline">
-                <Link href="/repositories">
-                  <FolderGit2 className="h-4 w-4" />
-                  <span>Manage Repositories</span>
-                </Link>
-              </Button>
-              <Button asChild className="w-full justify-start gap-3" variant="outline">
-                <Link href="/reviews">
-                  <History className="h-4 w-4" />
-                  <span>View All Reviews</span>
-                </Link>
-              </Button>
-              <Button asChild className="w-full justify-start gap-3" variant="outline">
-                <Link href="/settings">
-                  <Settings className="h-4 w-4" />
-                  <span>Settings</span>
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    </div>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader className="flex items-center justify-between pb-3">
+                  <CardTitle className="text-base">Agent Activity</CardTitle>
+                  <Badge variant="amber" size="xs" className="animate-pulse">Active</Badge>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <AgentProgress steps={agentSteps} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex items-center justify-between pb-3">
+                  <CardTitle className="text-base">Recent Activity</CardTitle>
+                  <Button asChild variant="ghost" size="xs">
+                    <Link href="/reviews">View all</Link>
+                  </Button>
+                </CardHeader>
+                <CardContent className="pt-0 space-y-3">
+                  {recentActivity.map((activity, index) => (
+                    <ActivityItem key={index} {...activity} />
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 space-y-2">
+                  <Button asChild variant="outline" className="w-full justify-start gap-3">
+                    <Link href="/repositories">
+                      <FolderGit2 className="w-4 h-4" />
+                      <span>Manage Repositories</span>
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="w-full justify-start gap-3">
+                    <Link href="/reviews">
+                      <History className="w-4 h-4" />
+                      <span>View All Reviews</span>
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="w-full justify-start gap-3">
+                    <Link href="/settings">
+                      <Settings className="w-4 h-4" />
+                      <span>Settings</span>
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </main>
+      </div>
+    </>
   );
 }
